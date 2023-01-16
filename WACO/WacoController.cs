@@ -9,6 +9,10 @@ namespace WACO
     public class WacoController
     {
         public List<User> _users = new List<User>();
+        public WacoController(List<User> users)
+        {
+            _users = users;
+        }
 
         public void Add(User myUser)
         {
@@ -25,9 +29,6 @@ namespace WACO
 
         public User FindUser(int ci)
         {
-            //var query = _users.Where(item => item.CI == ci);
-            //return query.FirstOrDefault();
-            //return _users.Select(item => item.CI == ci);
             var result = _users.FirstOrDefault(r => r.CI.Equals(ci));
             if(result == null)
             {
@@ -43,22 +44,5 @@ namespace WACO
                 Console.WriteLine(item.Name+"/"+item.SurName+"/"+item.CI);
             }
         }
-
-        //public List<Consumption> GetPendingConsumptionPerUser(int ci)
-        //{
-        //    List<Consumption> result= new List<Consumption>();
-        //    User user = FindUser(ci);
-        //    if(user != null)
-        //    {
-        //        user.
-        //    }
-
-        //    return result;
-        //}
-
-        //public int GetTotalDebtPerUser(int ci)
-        //{
-
-        //}
     }
 }

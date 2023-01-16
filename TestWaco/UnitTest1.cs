@@ -1,5 +1,8 @@
 using Microsoft.VisualStudio.TestPlatform.CommunicationUtilities;
+using System.Collections.Generic;
+using System.Xml.Linq;
 using WACO;
+
 
 namespace TestWaco
 {
@@ -11,14 +14,12 @@ namespace TestWaco
         [TestMethod]
         public void TestValidateUserCreationWithDuplicateValues()
         {
-            User myUser1 = new User(345431, "Pedro", "Vargas");
-            User myUser2 = new User(123412, "Pablo", "Camacho");
-            User myUser3 = new User(544323, "Jorge", "Venegas");
+            List<User> users = new List<User>();
+            users.Add(new User (345431,"Pedro","Vargas" ));
+            users.Add(new User (123412,"Pablo","Camacho"));
+            users.Add(new User (544323,"Jorge","Venegas"));
 
-            WacoController myList = new WacoController();
-            myList.Add(myUser1);
-            myList.Add(myUser2);
-            myList.Add(myUser3);
+            WacoController myList = new WacoController(users);
 
             Assert.IsTrue(myList.ExistsUserWithCI(544323));
         }
@@ -26,17 +27,15 @@ namespace TestWaco
         [TestMethod]
         public void TestValidateMoreThanOneLectureByPeriod()
         {
-            User myUser1 = new User(345431, "Pedro", "Vargas");
+         
+            List<Consumption> consumptions = new List<Consumption>();
+            consumptions.Add(new Consumption("01/2023", 200));
+            consumptions.Add(new Consumption("03/2023", 400));
+            consumptions.Add(new Consumption("04/2023", 600));
+            consumptions.Add(new Consumption("01/2023", 800));
 
-            Consumption consumption1 = new Consumption("01/2023", 500);
-            Consumption consumption2 = new Consumption("01/2023", 400);
-            Consumption consumption3 = new Consumption("03/2023", 600);
-            Consumption consumption4 = new Consumption("01/2023", 100);
+            User myUser1 = new User(345431, "Pedro", "Vargas", consumptions);
 
-            myUser1.Add_Consumption(consumption1);
-            myUser1.Add_Consumption(consumption2);
-            myUser1.Add_Consumption(consumption3);
-            myUser1.Add_Consumption(consumption4);         
             Assert.IsTrue(myUser1.VerifyLecture("01/2023"));
         }
 
@@ -44,18 +43,17 @@ namespace TestWaco
         public void TestValidateUserExistenceInReadingConsumptionReturnErrorMessage()
         {
             string message = string.Empty;
-            User myUser1 = new User(345431, "Pedro", "Vargas");
-            User myUser2 = new User(123412, "Pablo", "Camacho");
-            User myUser3 = new User(544323, "Jorge", "Venegas");
 
-            WacoController myList = new WacoController();
-            myList.Add(myUser1);
-            myList.Add(myUser2);
-            myList.Add(myUser3);
+            List<User> users = new List<User>();
+            users.Add(new User(345431, "Pedro", "Vargas"));
+            users.Add(new User(123412, "Pablo", "Camacho"));
+            users.Add(new User(544323, "Jorge", "Venegas"));
+
+            WacoController myList = new WacoController(users);
 
             try
             {
-                myList.FindUser(7896642);
+                myList.FindUser(898746);
             }
             catch (Exception ex)
             {
@@ -63,36 +61,57 @@ namespace TestWaco
             }
             Assert.AreEqual(message, "The CI doesn't Exist");
         }
-       [TestMethod]
-       public void TestValidateGetTotalDebtReturnCorrectSum()//correct debt
+        [TestMethod]
+        public void TestValidateGetTotalDebtReturnCorrectSum()//correct debt
         {
-            User myUser1 = new User(345431, "Pedro", "Vargas");
-            Consumption consumption1 = new Consumption("01/2023", 10);//20
-            Consumption consumption2 = new Consumption("02/2023", 20);//20
-            Consumption consumption3 = new Consumption("03/2023", 30);//20
-            Consumption consumption4 = new Consumption("04/2023", 50);//40 total 100
+            List<Consumption> consumptions = new List<Consumption>();
+            consumptions.Add(new Consumption("01/2023", 20));//20
+            consumptions.Add(new Consumption("02/2023", 30));//20
+            consumptions.Add(new Consumption("03/2023", 40));//20
+            consumptions.Add(new Consumption("04/2023", 70));//40 Total 100
 
-            myUser1.Add_Consumption(consumption1);
-            myUser1.Add_Consumption(consumption2);
-            myUser1.Add_Consumption(consumption3);
-            myUser1.Add_Consumption(consumption4);
-            Assert.AreEqual(myUser1.TotalDebt(), 100);
+            User myUser1 = new User(345431, "Pedro", "Vargas", consumptions);
+
+            Assert.AreEqual(myUser1.TotalDebt(consumptions), 120);
         }
         [TestMethod]
-        public void TestVerifyIfMyPaidIsUpdated()
+        public void TestVerifyIfUserPaidIsUpdatedTo0InTotalPaid()
         {
-            User myUser1 = new User(345431, "Pedro", "Vargas");
-            Consumption consumption1 = new Consumption("01/2023", 10);//20
-            Consumption consumption2 = new Consumption("02/2023", 20);//20
-            Consumption consumption3 = new Consumption("03/2023", 30);//20
-            Consumption consumption4 = new Consumption("04/2023", 50);//40 total 100
+            List<Consumption> consumptions = new List<Consumption>();
+            consumptions.Add(new Consumption("01/2023", 20));//20
+            consumptions.Add(new Consumption("02/2023", 30));//20
+            consumptions.Add(new Consumption("03/2023", 40));//20
+            consumptions.Add(new Consumption("04/2023", 70));//40 Total 100
 
-            myUser1.Add_Consumption(consumption1);
-            myUser1.Add_Consumption(consumption2);
-            myUser1.Add_Consumption(consumption3);
-            myUser1.Add_Consumption(consumption4);
-            myUser1.PaidTotalDebt();
-            Assert.AreEqual(myUser1.TotalDebt(),0);
+            User myUser1 = new User(345431, "Pedro", "Vargas", consumptions);
+
+            Assert.AreEqual(myUser1.PaidTotalDebt(consumptions), 0);
         }
+
+        [TestMethod]
+        public void TestPaidPartialDebtEnteringNumberofPeriods()
+        {
+            string message = string.Empty;
+
+            List<Consumption> consumptions = new List<Consumption>();
+            consumptions.Add(new Consumption("01/2023", 20));
+            consumptions.Add(new Consumption("02/2023", 30));
+            consumptions.Add(new Consumption("03/2023", 40));
+            consumptions.Add(new Consumption("04/2023", 70));
+
+            User myUser1 = new User(345431, "Pedro", "Vargas", consumptions);
+
+            try
+            {
+                myUser1.PaidPartialDebt(5, consumptions);
+            }
+            catch (Exception ex)
+            {
+                message = ex.Message;
+            }
+            Assert.AreEqual(message, "Wrong number of periods");
+        }
+
+
     }
 }
